@@ -1876,6 +1876,15 @@ void R5900::Dynarec::OpcodeImpl::recSYSCALL()
 				cpuRegs.GPR.n.ra.UL[0]);
 		}
 
+		if (g_cpuConstRegs[3].UC[0] == 0x98 && cpuRegs.GPR.n.a0.UL[0] == 0) {
+			Console.WriteLn("[SEMA-ZERO] iWaitSema called with a0=0! Dumping all GPRs:");
+			for (int i = 0; i < 32; i++) {
+				Console.WriteLn("[GPR] r%d = 0x%08X%08X", i,
+					cpuRegs.GPR.r[i].UL[1],
+					cpuRegs.GPR.r[i].UL[0]);
+			}
+		}
+
 		if (g_cpuConstRegs[3].UC[0] == 0x64 || g_cpuConstRegs[3].UC[0] == 0x68)
 		{
 			Console.WriteLn("[SYSCALL-DIAG] FlushCache called: v0=%d a0=0x%08X a1=0x%08X pc=0x%08X",
