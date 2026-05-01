@@ -863,6 +863,21 @@ static void recBNE_process(int process)
 
 void recBNE()
 {
+	if ((pc - 4) == 0x00108FDCu) {
+		iFlushCall(FLUSH_EVERYTHING);
+		armAsm->Push(a64::x0, a64::x1, a64::x2, a64::x3);
+		armAsm->Push(a64::lr, a64::xzr);
+		armAsm->Ldr(a64::w0, PTR_CPU(cpuRegs.GPR.r[2].UL[0]));
+		armAsm->Ldr(a64::w1, PTR_CPU(cpuRegs.GPR.n.sp.UL[0]));
+		armEmitCall(reinterpret_cast<void*>(+[](u32 r2val, u32 spval) {
+			u32* stack_ptr = (u32*)PSM(spval + 0x30);
+			u32 stack_val = stack_ptr ? *stack_ptr : 0xDEADBEEF;
+			Console.WriteLn("[BNE-PROBE] r2=0x%08X sp=0x%08X sp+0x30=0x%08X", r2val, spval, stack_val);
+		}));
+		armAsm->Pop(a64::lr, a64::xzr);
+		armAsm->Pop(a64::x0, a64::x1, a64::x2, a64::x3);
+	}
+
 	if ((pc - 4) == 0x9FC4109Cu)
 	{
 		static u32 s_ee4109c_log_count = 0;
