@@ -1,0 +1,101 @@
+		// TODO(Stenzek): Use Rs directly if imm=0. But beware of upper bits.
+        
+
+
+		// TODO(Stenzek): Use Rs directly if imm=0. But beware of upper bits.
+        
+        a64::Label not_kseg1;
+        if (bits == 32)
+        {
+            // [iter662] BUG FIX: _allocX86reg MUST happen BEFORE the KSEG1 branch.
+            const int addr_slot = _allocX86reg(X86TYPE_TEMP, 0, MODE_CALLEESAVED);
+
+            const a64::WRegister ecx_w(ECX.GetCode());
+            armAsm->Mov(HostW(addr_slot), ecx_w);
+            armAsm->And(a64::w10, ecx_w, 0xE0000000u);
+            armAsm->Cmp(a64::w10, 0xA0000000u);
+
+            armAsm->B(&not_kseg1, a64::Condition::ne);
+
+            // == KSEG1 ==
+            armAsm->Push(a64::x0, a64::x1);
+            armAsm->Push(a64::lr, a64::xzr);
+
+            armAsm->Mov(a64::w0, ecx_w);
+            armAsm->Mov(a64::w1, a64::WRegister(HostGprPhys(regt)));
+
+            armEmitCall((void*)vtlb_MemWrite32_KSEG1);
+
+            armAsm->Pop(a64::lr, a64::xzr);
+            armAsm->Pop(a64::x0, a64::x1);
+
+            // Skip normal write
+            a64::Label end_store;
+            armAsm->B(&end_store);
+
+            armBind(&not_kseg1);
+            vtlb_DynGenWrite(bits, xmm, HostGprPhys(addr_slot), regt);
+            armBind(&end_store);
+
+            _freeX86reg(addr_slot);
+        }
+		else
+		{
+			// [iter214] BUG FIX: use _Safe helper that computes addr from cpuRegs.sp + imm
+			// internally, bypassing ECX (w1) which was receiving garbage values.
+			if (bits == 64 && (bios_stack64_sp_guard || bios_ra_stack64_guard) && IsBiosRaStack64RwFixEnabled())
+			{
+				// [iter215] Flush sp to cpuRegs before safe helper
+				int sp_slot = _checkX86reg(X86TYPE_GPR, 29, MODE_READ);
+				if (sp_slot >= 0)
+					armAsm->Str(HostW(sp_slot), PTR_CPU(cpuRegs.GPR.n.sp.UL[0]));
+
+				armAsm->Push(a64::x0, a64::x1);
+				armAsm->Push(a64::x29, a64::lr);
+				armAsm->Mov(a64::w0, (s32)_Imm_);
+				armAsm->Mov(a64::x1, HostX(regt));
+				armEmitCall((void*)WriteGuestMem64ForRaStack_Safe);
+				armAsm->Pop(a64::lr, a64::x29);
+				armAsm->Pop(a64::x0, a64::x1);
+			}
+			else
+				{
+					const int addr_slot = _allocX86reg(X86TYPE_TEMP, 0, MODE_CALLEESAVED);
+					armAsm->Mov(HostW(addr_slot), ECX);
+					vtlb_DynGenWrite(bits, xmm, HostGprPhys(addr_slot), regt);
+					_freeX86reg(addr_slot);
+				}
+			if (bios_ra_stack64_guard)
+			{
+				armAsm->Push(a64::x0, a64::x1, a64::x2, a64::x3);
+				armAsm->Push(a64::x29, a64::lr);
+				armAsm->Mov(a64::w0, pc);
+				armLoad(a64::w1, PTR_CPU(cpuRegs.GPR.n.sp.UL[0]));
+				armMoveAddressToReg(a64::x15, const_cast<u32*>(&g_ra_stack64_addr_shadow));
+				armAsm->Ldr(a64::w2, a64::MemOperand(a64::x15));
+				armLoad(a64::w3, PTR_CPU(cpuRegs.GPR.n.ra.UL[0]));
+				armEmitCall((void*)TraceRaStack64StorePost);
+				armAsm->Pop(a64::lr, a64::x29);
+				armAsm->Pop(a64::x3, a64::x2, a64::x1, a64::x0);
+			}
+        }
+        
+        if (bits == 32)
+        {
+             // Just close the label if we opened it
+             // Wait, I can't leave the label hanging if I didn't emit the branch.
+             // I need to emit the full logic.
+        }
+	}
+}
+
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+void recLB()
+{
+	recLoad(8, true);
+	EE::Profiler.EmitOp(eeOpcode::LB);
+}
+void recLBU()
+{

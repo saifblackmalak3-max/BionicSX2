@@ -865,21 +865,17 @@ void recBNE()
 {
 	if ((pc - 4) == 0x00108FDCu) {
 		iFlushCall(FLUSH_EVERYTHING);
-		armAsm->Push(a64::x0, a64::x1, a64::x2, a64::x3);
-		armAsm->Push(a64::lr, a64::xzr);
-		armAsm->Ldr(a64::w0, PTR_CPU(cpuRegs.GPR.r[2].UL[0]));
-		armAsm->Ldr(a64::w1, PTR_CPU(cpuRegs.GPR.n.sp.UL[0]));
-		armEmitCall(reinterpret_cast<void*>(+[](u32 r2val, u32 spval) {
-			static u32 s_last_val = 0xDEADBEEF;
-			u32* stack_ptr = (u32*)PSM(spval + 0x30);
-			u32 stack_val = stack_ptr ? *stack_ptr : 0xDEADBEEF;
-			if (stack_val != s_last_val) {
-				Console.WriteLn("[BNE-CHANGE] r2=0x%08X sp+0x30 changed: 0x%08X -> 0x%08X", r2val, s_last_val, stack_val);
-				s_last_val = stack_val;
+		armAsm->Push(a64::x0, a64::lr);
+		armEmitCall(reinterpret_cast<void*>(+[]() {
+			u32 sp = cpuRegs.GPR.n.sp.UL[0];
+			u32* counter = (u32*)PSM(sp + 0x30);
+			if (counter && *counter > 0) {
+				Console.WriteLn("[FIX-COUNTER] forcing sp+0x30 to 0 at sp=0x%08X", sp);
+				*counter = 0;
+				cpuRegs.GPR.r[2].UL[0] = 0;
 			}
 		}));
-		armAsm->Pop(a64::lr, a64::xzr);
-		armAsm->Pop(a64::x0, a64::x1, a64::x2, a64::x3);
+		armAsm->Pop(a64::x0, a64::lr);
 	}
 
 	if ((pc - 4) == 0x9FC4109Cu)
