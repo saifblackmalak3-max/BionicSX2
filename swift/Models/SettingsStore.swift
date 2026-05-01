@@ -131,6 +131,9 @@ final class SettingsStore: @unchecked Sendable {
     var hapticFeedback: Bool {
         didSet { iPSX2Bridge.setINIBool("iPSX2/UI", key: "HapticFeedback", value: hapticFeedback) }
     }
+    var hideMenuButton: Bool = false {
+        didSet { iPSX2Bridge.setINIBool("UI", key: "HideMenuButton", value: hideMenuButton) }
+    }
 
     // ── Init from INI ──
     private init() {
@@ -171,6 +174,7 @@ final class SettingsStore: @unchecked Sendable {
         // UI
         padOpacity = iPSX2Bridge.getINIFloat("iPSX2/UI", key: "PadOpacity", defaultValue: 0.6)
         hapticFeedback = iPSX2Bridge.getINIBool("iPSX2/UI", key: "HapticFeedback", defaultValue: true)
+        hideMenuButton = iPSX2Bridge.getINIBool("UI", key: "HideMenuButton", defaultValue: false)
         // [P60] Force MTVU off (known buggy)
         iPSX2Bridge.setINIBool("EmuCore/Speedhacks", key: "vuThread", value: false)
         // Apply OSD preset

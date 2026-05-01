@@ -50,7 +50,9 @@ struct GameScreenView: View {
         VStack {
             HStack {
                 Spacer()
-                menuButton(isLandscape: isLandscape)
+                if !settings.hideMenuButton {
+                    menuButton(isLandscape: isLandscape)
+                }
             }
             .padding(.top, isLandscape ? 8 : 4)
             .padding(.trailing, isLandscape ? 8 : 4)
@@ -81,6 +83,25 @@ struct GameScreenView: View {
                 Toggle(isOn: $fullScreen) {
                     Label("Full Screen", systemImage: "arrow.up.left.and.arrow.down.right")
                 }
+            }
+            Toggle(isOn: Binding(
+                get: { settings.hideMenuButton },
+                set: { newValue in
+                    settings.hideMenuButton = newValue
+                }
+            )) {
+                Label("Hide Menu Button", systemImage: "eye.slash")
+            }
+            Divider()
+            Button {
+                iPSX2Bridge.saveState(slot: 0)
+            } label: {
+                Label("Save State", systemImage: "square.and.arrow.down")
+            }
+            Button {
+                iPSX2Bridge.loadState(slot: 0)
+            } label: {
+                Label("Load State", systemImage: "square.and.arrow.up")
             }
             Divider()
             Button {

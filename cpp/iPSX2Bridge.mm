@@ -132,6 +132,22 @@ static NSDate* s_lastNVMSaveDate = nil;
     iPSX2_SetSDLFullscreen(enabled ? true : false);
 }
 
++ (void)saveState:(int)slot {
+    if (VMManager::SaveStateToSlot(slot)) {
+        NSLog(@"[iPSX2Bridge] Save state to slot %d succeeded", slot);
+    } else {
+        NSLog(@"[iPSX2Bridge] Save state to slot %d failed", slot);
+    }
+}
+
++ (void)loadState:(int)slot {
+    if (VMManager::LoadStateFromSlot(slot)) {
+        NSLog(@"[iPSX2Bridge] Load state from slot %d succeeded", slot);
+    } else {
+        NSLog(@"[iPSX2Bridge] Load state from slot %d failed", slot);
+    }
+}
+
 + (nonnull NSString *)buildVersion {
     NSString *ver = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @"?";
     return [NSString stringWithFormat:@"iPSX2 v%@", ver];

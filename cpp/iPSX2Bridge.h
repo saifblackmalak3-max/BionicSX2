@@ -70,6 +70,10 @@ typedef NS_ENUM(NSInteger, iPSX2PadButton) {
 + (void)requestVMStop;
 + (void)setFullScreen:(BOOL)enabled;
 
+// Save State management
++ (void)saveState:(int)slot;
++ (void)loadState:(int)slot;
+
 // Info
 + (nonnull NSString *)biosName;
 + (nonnull NSString *)buildVersion;

@@ -437,82 +437,23 @@ static void recSetBranchEQ(int bne, int process, a64::Label *pj32Ptr)
 
 	if (process & PROCESS_CONSTS)
 	{
-		// [iter661] Use _allocX86reg instead of _checkX86reg to ensure the runtime
-		// register is properly loaded from memory after delay slot compilation.
-		// _checkX86reg could return a stale slot if TrySwapDelaySlot clobbered
-		// the host register. _allocX86reg guarantees a valid load.
-		_deleteGPRtoXMMreg(_Rt_, DELETE_REG_FLUSH_AND_FREE);
-		const int regt = _allocX86reg(X86TYPE_GPR, _Rt_, MODE_READ);
 		_eeFlushAllDirty();
-		if (ee_loop_probe)
-		{
-			armAsm->Push(a64::x0, a64::x1, a64::x2, a64::x3);
-			armAsm->Push(a64::lr, a64::xzr);
-			armAsm->Mov(a64::w0, branch_pc);
-			armAsm->Mov(a64::w1, static_cast<u32>(g_cpuConstRegs[_Rs_].UL[0]));
-			armAsm->Mov(a64::w2, a64::WRegister(HostGprPhys(regt)));
-			armAsm->Mov(a64::w3, ee_loop_probe_meta);
-			armEmitCall((void*)LogEeLoopBranchCmp);
-			armAsm->Pop(a64::lr, a64::xzr);
-			armAsm->Pop(a64::x0, a64::x1, a64::x2, a64::x3);
-		}
-		armAsm->Cmp(a64::XRegister(HostGprPhys(regt)), g_cpuConstRegs[_Rs_].UD[0]);
+		_deleteGPRtoXMMreg(_Rt_, DELETE_REG_FLUSH_AND_FREE);
+		const int regt = _checkX86reg(X86TYPE_GPR, _Rt_, MODE_READ);
+		if (regt >= 0)
+			armAsm->Cmp(a64::XRegister(HostGprPhys(regt)), g_cpuConstRegs[_Rs_].UD[0]);
+		else
+			armAsm->Cmp(armLoad64(PTR_CPU(cpuRegs.GPR.r[_Rt_].UD[0])), g_cpuConstRegs[_Rs_].UD[0]);
 	}
 	else if (process & PROCESS_CONSTT)
 	{
-		// [iter661] Same fix as CONSTS: _allocX86reg ensures valid register load
-		_deleteGPRtoXMMreg(_Rs_, DELETE_REG_FLUSH_AND_FREE);
-		// [iter663] @@PRE_ALLOC_RS@@ probe: dump register state BEFORE allocating Rs
-		if (branch_pc == 0x800065A8u || branch_pc == 0x800065A4u) {
-			static int s_pa_n = 0;
-			if (s_pa_n < 5) {
-				int a0_slot = -1;
-				for (int s = 0; s < (int)iREGCNT_GPR; s++)
-					if (x86regs[s].inuse && x86regs[s].type == X86TYPE_GPR && x86regs[s].reg == 4) a0_slot = s;
-				u32 inuse_mask = 0;
-				for (u32 r = 0; r < iREGCNT_GPR; r++)
-					if (x86regs[r].inuse) inuse_mask |= (1u << r);
-				Console.WriteLn("@@PRE_ALLOC_RS@@ n=%d bpc=%08x a0_slot=%d inuse=%x s0=%d/%d/%x s1=%d/%d/%x s2=%d/%d/%x s3=%d/%d/%x s4=%d/%d/%x",
-					s_pa_n++, branch_pc, a0_slot, inuse_mask,
-					x86regs[0].inuse ? x86regs[0].reg : -1, x86regs[0].type, x86regs[0].mode,
-					x86regs[1].inuse ? x86regs[1].reg : -1, x86regs[1].type, x86regs[1].mode,
-					x86regs[2].inuse ? x86regs[2].reg : -1, x86regs[2].type, x86regs[2].mode,
-					x86regs[3].inuse ? x86regs[3].reg : -1, x86regs[3].type, x86regs[3].mode,
-					x86regs[4].inuse ? x86regs[4].reg : -1, x86regs[4].type, x86regs[4].mode);
-			}
-		}
-		const int regs = _allocX86reg(X86TYPE_GPR, _Rs_, MODE_READ);
 		_eeFlushAllDirty();
-		if (ee_loop_probe)
-		{
-			armAsm->Push(a64::x0, a64::x1, a64::x2, a64::x3);
-			armAsm->Push(a64::lr, a64::xzr);
-			armAsm->Mov(a64::w0, branch_pc);
-			if (regs >= 0)
-				armAsm->Mov(a64::w1, a64::WRegister(HostGprPhys(regs)));
-			else
-				armAsm->Ldr(a64::w1, PTR_CPU(cpuRegs.GPR.r[_Rs_].UL[0]));
-			armAsm->Mov(a64::w2, static_cast<u32>(g_cpuConstRegs[_Rt_].UL[0]));
-			armAsm->Mov(a64::w3, ee_loop_probe_meta);
-			armEmitCall((void*)LogEeLoopBranchCmp);
-			armAsm->Pop(a64::lr, a64::xzr);
-			armAsm->Pop(a64::x0, a64::x1, a64::x2, a64::x3);
-		}
-		// [iter220] TEMP_DIAG: runtime v0 value probe for BNE at 9FC43404
-		if (branch_pc == 0x9FC43404u)
-		{
-			Console.WriteLn("@@BNE_COMPILE_9FC43404@@ regs=%d process=%d rs=%d rt=%d",
-				regs, process, _Rs_, _Rt_);
-			armAsm->Push(a64::x0, a64::x1);
-			armAsm->Push(a64::x29, a64::lr);
-			armAsm->Mov(a64::x0, a64::XRegister(HostGprPhys(regs)));
-			armLoad(a64::w1, PTR_CPU(cpuRegs.cycle));
-			armEmitCall((void*)armsx2_probe_bne_9fc43404);
-			armAsm->Pop(a64::x29, a64::lr);  // [iter220] match Push order
-			armAsm->Pop(a64::x0, a64::x1);  // [iter220] match Push order
-		}
-		// [iter661] regs is always >= 0 now (allocated by _allocX86reg)
-		armAsm->Cmp(a64::XRegister(HostGprPhys(regs)), g_cpuConstRegs[_Rt_].UD[0]);
+		_deleteGPRtoXMMreg(_Rs_, DELETE_REG_FLUSH_AND_FREE);
+		const int regs = _checkX86reg(X86TYPE_GPR, _Rs_, MODE_READ);
+		if (regs >= 0)
+			armAsm->Cmp(a64::XRegister(HostGprPhys(regs)), g_cpuConstRegs[_Rt_].UD[0]);
+		else
+			armAsm->Cmp(armLoad64(PTR_CPU(cpuRegs.GPR.r[_Rs_].UD[0])), g_cpuConstRegs[_Rt_].UD[0]);
 	}
 	else
 	{

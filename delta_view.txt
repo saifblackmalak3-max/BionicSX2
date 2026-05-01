@@ -1,0 +1,130 @@
+static void recSetBranchEQ(int bne, int process, a64::Label *pj32Ptr)
+{
+	// TODO(Stenzek): This is suboptimal if the registers are in XMMs.
+	// If the constant register is already in a host register, we don't need the immediate...
+
+	if (process & PROCESS_CONSTS)
+	{
+		_eeFlushAllDirty();
+
+		_deleteGPRtoXMMreg(_Rt_, DELETE_REG_FLUSH_AND_FREE);
+		const int regt = _checkX86reg(X86TYPE_GPR, _Rt_, MODE_READ);
+		if (regt >= 0) {
+//            xImm64Op(xCMP, xRegister64(regt), rax, g_cpuConstRegs[_Rs_].UD[0]);
+            armAsm->Cmp(a64::XRegister(regt), g_cpuConstRegs[_Rs_].UD[0]);
+        }
+		else {
+//            xImm64Op(xCMP, ptr64[&cpuRegs.GPR.r[_Rt_].UD[0]], rax, g_cpuConstRegs[_Rs_].UD[0]);
+            armAsm->Cmp(armLoad64(PTR_CPU(cpuRegs.GPR.r[_Rt_].UD[0])), g_cpuConstRegs[_Rs_].UD[0]);
+        }
+	}
+	else if (process & PROCESS_CONSTT)
+	{
+		_eeFlushAllDirty();
+
+		_deleteGPRtoXMMreg(_Rs_, DELETE_REG_FLUSH_AND_FREE);
+		const int regs = _checkX86reg(X86TYPE_GPR, _Rs_, MODE_READ);
+		if (regs >= 0) {
+//            xImm64Op(xCMP, xRegister64(regs), rax, g_cpuConstRegs[_Rt_].UD[0]);
+            armAsm->Cmp(a64::XRegister(regs), g_cpuConstRegs[_Rt_].UD[0]);
+        }
+		else {
+//            xImm64Op(xCMP, ptr64[&cpuRegs.GPR.r[_Rs_].UD[0]], rax, g_cpuConstRegs[_Rt_].UD[0]);
+            armAsm->Cmp(armLoad64(PTR_CPU(cpuRegs.GPR.r[_Rs_].UD[0])), g_cpuConstRegs[_Rt_].UD[0]);
+        }
+	}
+	else
+	{
+		// force S into register, since we need to load it, may as well cache.
+		_deleteGPRtoXMMreg(_Rt_, DELETE_REG_FLUSH_AND_FREE);
+		const int regs = _allocX86reg(X86TYPE_GPR, _Rs_, MODE_READ);
+		const int regt = _checkX86reg(X86TYPE_GPR, _Rt_, MODE_READ);
+		_eeFlushAllDirty();
+
+		if (regt >= 0) {
+//            xCMP(xRegister64(regs), xRegister64(regt));
+            armAsm->Cmp(a64::XRegister(regs), a64::XRegister(regt));
+        }
+		else {
+//            xCMP(xRegister64(regs), ptr64[&cpuRegs.GPR.r[_Rt_]]);
+            armAsm->Cmp(a64::XRegister(regs), armLoad64(PTR_CPU(cpuRegs.GPR.r[_Rt_])));
+        }
+	}
+
+	if (bne) {
+//        j32Ptr[0] = JE32(0);
+        armAsm->B(pj32Ptr, a64::Condition::eq);
+    }
+	else {
+//        j32Ptr[0] = JNE32(0);
+        armAsm->B(pj32Ptr, a64::Condition::ne);
+    }
+}
+
+static void recSetBranchL(int ltz, a64::Label *pj32Ptr)
+{
+	const int regs = _checkX86reg(X86TYPE_GPR, _Rs_, MODE_READ);
+	const int regsxmm = _checkXMMreg(XMMTYPE_GPRREG, _Rs_, MODE_READ);
+	_eeFlushAllDirty();
+
+	if (regsxmm >= 0)
+	{
+//		xMOVMSKPS(eax, xRegisterSSE(regsxmm));
+        armMOVMSKPS(EAX, a64::QRegister(regsxmm));
+//		xTEST(al, 2);
+        armAsm->Tst(EAX, 2);
+
+		if (ltz) {
+//            j32Ptr[0] = JZ32(0);
+            armAsm->B(pj32Ptr, a64::Condition::eq);
+        }
+		else {
+//            j32Ptr[0] = JNZ32(0);
+            armAsm->B(pj32Ptr, a64::Condition::ne);
+        }
+
+		return;
+	}
+
+	if (regs >= 0) {
+//        xCMP(xRegister64(regs), 0);
+        armAsm->Cmp(a64::XRegister(regs), 0);
+    }
+	else {
+//        xCMP(ptr64[&cpuRegs.GPR.r[_Rs_].UD[0]], 0);
+        armAsm->Cmp(armLoad64(PTR_CPU(cpuRegs.GPR.r[_Rs_].UD[0])), 0);
+    }
+
+	if (ltz) {
+//        j32Ptr[0] = JGE32(0);
+        armAsm->B(pj32Ptr, a64::Condition::ge);
+    }
+	else {
+//        j32Ptr[0] = JL32(0);
+        armAsm->B(pj32Ptr, a64::Condition::lt);
+    }
+}
+
+//// BEQ
+static void recBEQ_const()
+{
+	u32 branchTo;
+
+	if (g_cpuConstRegs[_Rs_].SD[0] == g_cpuConstRegs[_Rt_].SD[0])
+		branchTo = ((s32)_Imm_ * 4) + pc;
+	else
+		branchTo = pc + 4;
+
+	recompileNextInstruction(true, false);
+	SetBranchImm(branchTo);
+}
+
+static void recBEQ_process(int process)
+{
+	u32 branchTo = ((s32)_Imm_ * 4) + pc;
+
+	if (_Rs_ == _Rt_)
+	{
+		recompileNextInstruction(true, false);
+		SetBranchImm(branchTo);
+	}
