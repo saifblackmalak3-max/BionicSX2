@@ -1886,13 +1886,11 @@ void R5900::Dynarec::OpcodeImpl::recSYSCALL()
 		}
 
 		if (g_cpuConstRegs[3].UC[0] == 0x98 && cpuRegs.GPR.n.a0.UL[0] == 0) {
-			u32 ra = cpuRegs.GPR.n.ra.UL[0];
-			Console.WriteLn("[MIPS-RA] Dumping 32 instructions before ra=0x%08X:", ra);
-			for (int i = -32; i <= 0; i++) {
-				u32 addr = ra + (i * 4);
-				u32* ptr = (u32*)PSM(addr);
-				if (ptr) Console.WriteLn("[MIPS] 0x%08X: 0x%08X", addr, *ptr);
-			}
+			u32 sp = cpuRegs.GPR.n.sp.UL[0];
+			u32* stack_ptr = (u32*)PSM(sp + 0x30);
+			u32 counter = stack_ptr ? *stack_ptr : 0xDEADBEEF;
+			Console.WriteLn("[STACK] sp=0x%08X sp+0x30=0x%08X counter=0x%08X", sp, sp + 0x30, counter);
+			Console.WriteLn("[STACK] r17=0x%08X (expected sema ID)", cpuRegs.GPR.r[17].UL[0]);
 		}
 
 		if (g_cpuConstRegs[3].UC[0] == 0x64 || g_cpuConstRegs[3].UC[0] == 0x68)
