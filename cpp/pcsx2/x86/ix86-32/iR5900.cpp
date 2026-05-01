@@ -1865,6 +1865,14 @@ void R5900::Dynarec::OpcodeImpl::recSYSCALL()
 	// Skip the kernel SYSCALL exception handler and add estimated cycles instead.
 	if (GPR_IS_CONST1(3))
 	{
+		if (g_cpuConstRegs[3].UC[0] == 0x98 || g_cpuConstRegs[3].UC[0] == 0x99) {
+			Console.WriteLn("[SEMA] iWaitSema/iSignalSema: v0=0x%02X a0=0x%08X pc=0x%08X ra=0x%08X",
+				g_cpuConstRegs[3].UC[0],
+				cpuRegs.GPR.n.a0.UL[0],
+				cpuRegs.pc,
+				cpuRegs.GPR.n.ra.UL[0]);
+		}
+
 		if (g_cpuConstRegs[3].UC[0] == 0x64 || g_cpuConstRegs[3].UC[0] == 0x68)
 		{
 			Console.WriteLn("[SYSCALL-DIAG] FlushCache called: v0=%d a0=0x%08X a1=0x%08X pc=0x%08X",
