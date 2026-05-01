@@ -1855,6 +1855,11 @@ static void recExecute()
 
 void R5900::Dynarec::OpcodeImpl::recSYSCALL()
 {
+	u8 sysnum = g_cpuConstRegs[3].UC[0];
+	if (sysnum != 0x00 && sysnum != 0x01 && sysnum != 0x02) {
+		Console.WriteLn("[SYSCALL-ALL] syscall v0=0x%02X pc=0x%08X", sysnum, cpuRegs.pc);
+	}
+
 	EE::Profiler.EmitOp(eeOpcode::SYSCALL);
 	// FlushCache/iFlushCache skip: PC PCSX2 equivalent optimization.
 	// Skip the kernel SYSCALL exception handler and add estimated cycles instead.
