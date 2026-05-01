@@ -40,6 +40,7 @@ void gsReset()
 
 static __fi void gsCSRwrite( const tGS_CSR& csr )
 {
+	Console.WriteLn("[GS-CSR] gsCSRwrite called: csr=0x%08X pc=0x%08X", csr._u32, cpuRegs.pc);
 	if (csr.RESET) {
 		GUNIT_WARN("GUNIT_WARN: csr.RESET");
 		//Console.Warning( "csr.RESET" );

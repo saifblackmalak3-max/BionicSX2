@@ -48,6 +48,7 @@ bool Gif_HandlerAD(u8* pMem)
 	}
 	else if (reg == GIF_A_D_REG_SIGNAL)
 	{ // SIGNAL
+		Console.WriteLn("[GIF-SIGNAL] GIF SIGNAL received");
 		if (CSRreg.SIGNAL)
 		{ // Time to ignore all subsequent drawing operations.
 			GUNIT_WARN(Color_Orange, "GIF Handler - Stalling SIGNAL");
@@ -70,6 +71,7 @@ bool Gif_HandlerAD(u8* pMem)
 	}
 	else if (reg == GIF_A_D_REG_FINISH)
 	{ // FINISH
+		Console.WriteLn("[GIF-FINISH] GIF FINISH signal received");
 		GUNIT_WARN("GIF Handler - FINISH");
 		gifUnit.gsFINISH.gsFINISHFired = false;
 		gifUnit.gsFINISH.gsFINISHPending = true;
