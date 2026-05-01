@@ -1885,6 +1885,16 @@ void R5900::Dynarec::OpcodeImpl::recSYSCALL()
 			}
 		}
 
+		if (g_cpuConstRegs[3].UC[0] == 0x98 && cpuRegs.GPR.n.a0.UL[0] == 0) {
+			u32 ra = cpuRegs.GPR.n.ra.UL[0];
+			Console.WriteLn("[MIPS-RA] Dumping 8 instructions before ra=0x%08X:", ra);
+			for (int i = -8; i <= 0; i++) {
+				u32 addr = ra + (i * 4);
+				u32* ptr = (u32*)PSM(addr);
+				if (ptr) Console.WriteLn("[MIPS] 0x%08X: 0x%08X", addr, *ptr);
+			}
+		}
+
 		if (g_cpuConstRegs[3].UC[0] == 0x64 || g_cpuConstRegs[3].UC[0] == 0x68)
 		{
 			Console.WriteLn("[SYSCALL-DIAG] FlushCache called: v0=%d a0=0x%08X a1=0x%08X pc=0x%08X",
