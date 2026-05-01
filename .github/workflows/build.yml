@@ -1,0 +1,67 @@
+name: Build iPSX2 M4 Final Strike
+on: [push, workflow_dispatch]
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      
+      - name: Setup MoltenVK iOS Specialized
+        run: |
+          set -euo pipefail
+          
+          # Download and extract
+          echo "📥 Downloading MoltenVK v1.4.1..."
+          curl -L https://github.com/KhronosGroup/MoltenVK/releases/download/v1.4.1/MoltenVK-ios.tar -o MoltenVK.tar
+          echo "📦 Extracting tarball..."
+          tar -xf MoltenVK.tar
+          
+          # Dynamically find the ios-arm64 framework using find
+          echo "🔍 Searching for ios-arm64 MoltenVK.framework..."
+          IOS_ARM64_FRAMEWORK=$(find . -type d -path "*/ios-arm64/MoltenVK.framework" | head -1)
+          
+          if [[ -z "$IOS_ARM64_FRAMEWORK" ]]; then
+            echo "❌ ERROR: Could not find ios-arm64/MoltenVK.framework in extracted archive"
+            echo "Archive contents:"
+            find . -type d -name "*.framework" | head -20
+            exit 1
+          fi
+          
+          echo "✅ Found framework at: $IOS_ARM64_FRAMEWORK"
+          
+          # Create clean Frameworks directory and copy ONLY the ios-arm64 version
+          rm -rf Frameworks
+          rm -rf MY_SAFE_LIBS
+          mkdir -p Frameworks
+          cp -Ra "$IOS_ARM64_FRAMEWORK" Frameworks/
+          echo "✅ Copied MoltenVK.framework to Frameworks/"
+          
+          # CRITICAL: Delete ALL extracted files to prevent CMake from linking macOS version
+          echo "🧹 Cleaning up extracted files..."
+          rm -rf MoltenVK/
+          rm -f MoltenVK.tar
+          
+          # Verify cleanup and final structure
+          echo "✅ Final Frameworks structure:"
+          ls -Ra Frameworks/
+
+      - name: CMake Configuration
+        run: |
+          set -euo pipefail
+          rm -rf build/
+          
+          FRAMEWORKS_PATH="${{ github.workspace }}/Frameworks"
+          
+          cmake -B build -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_INSTALL_RPATH="@executable_path/Frameworks" \
+            -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH=YES \
+            "-DMOLTENVK_FRAMEWORK_PATH=${FRAMEWORKS_PATH}" \
+            "-DCMAKE_PREFIX_PATH=${FRAMEWORKS_PATH}" \
+            -DUSE_VULKAN=ON
+
+          cmake --build build --config Release --target iPSX2
