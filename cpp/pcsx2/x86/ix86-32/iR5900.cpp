@@ -1869,7 +1869,7 @@ void R5900::Dynarec::OpcodeImpl::recSYSCALL()
 				if (a1 == 0xFFFFFFFF || a1 == 0) {
 					eeRecNeedsReset = true;
 				} else {
-					recClear(cpuRegs.GPR.n.a0.UL[0], (a1 + 3) / 4);
+					recCpu.Clear(cpuRegs.GPR.n.a0.UL[0], (a1 + 3) / 4);
 				}
 			}));
 			s_nBlockCycles += 5650;
