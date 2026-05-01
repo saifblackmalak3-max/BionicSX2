@@ -863,21 +863,6 @@ static void recBNE_process(int process)
 
 void recBNE()
 {
-	if ((pc - 4) == 0x00108FDCu) {
-		iFlushCall(FLUSH_EVERYTHING);
-		armAsm->Push(a64::x0, a64::lr);
-		armEmitCall(reinterpret_cast<void*>(+[]() {
-			u32 sp = cpuRegs.GPR.n.sp.UL[0];
-			u32* counter = (u32*)PSM(sp + 0x30);
-			if (counter && *counter > 0) {
-				Console.WriteLn("[FIX-COUNTER] forcing sp+0x30 to 0 at sp=0x%08X", sp);
-				*counter = 0;
-				cpuRegs.GPR.r[2].UL[0] = 0;
-			}
-		}));
-		armAsm->Pop(a64::x0, a64::lr);
-	}
-
 	if ((pc - 4) == 0x9FC4109Cu)
 	{
 		static u32 s_ee4109c_log_count = 0;
