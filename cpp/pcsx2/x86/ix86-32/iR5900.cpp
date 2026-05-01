@@ -1864,6 +1864,11 @@ void R5900::Dynarec::OpcodeImpl::recSYSCALL()
 		{
 			// Emulate the amount of cycles it takes for the exception handlers to run
 			// This number was found by using github.com/F0bes/flushcache-cycles
+			Console.WriteLn("[SYSCALL-DIAG] FlushCache called: v0=%d a0=0x%08X a1=0x%08X pc=0x%08X",
+				g_cpuConstRegs[3].UC[0],
+				cpuRegs.GPR.n.a0.UL[0],
+				cpuRegs.GPR.n.a1.UL[0],
+				cpuRegs.pc);
 			s_nBlockCycles += 5650;
 			return;
 		}
