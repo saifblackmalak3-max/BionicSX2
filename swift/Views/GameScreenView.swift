@@ -18,6 +18,11 @@ struct GameScreenView: View {
                 // so that pad coordinates match the layout editor exactly.
                 ZStack {
                     MetalGameView()
+                        .onTapGesture(count: 2) {
+                            if settings.hideMenuButton {
+                                settings.hideMenuButton = false
+                            }
+                        }
                     if padVisible {
                         VirtualControllerView(isLandscape: true)
                     }
@@ -29,6 +34,11 @@ struct GameScreenView: View {
                 VStack(spacing: 0) {
                     MetalGameView()
                         .frame(height: geo.size.height / 2)
+                        .onTapGesture(count: 2) {
+                            if settings.hideMenuButton {
+                                settings.hideMenuButton = false
+                            }
+                        }
                     if padVisible {
                         VirtualControllerView()
                             .frame(height: geo.size.height / 2)

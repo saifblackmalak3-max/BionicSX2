@@ -853,6 +853,7 @@ INISettingsInterface* g_p44_settings_interface = nullptr;
     
     // Re-ensure EmuFolders (idempotent)
     EmuFolders::DataRoot = dataRoot;
+    EmuFolders::Savestates = dataRoot + "/sstates";
     EmuFolders::Bios = dataRoot + "/bios";
     // ...
     
