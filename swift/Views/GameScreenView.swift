@@ -94,12 +94,12 @@ struct GameScreenView: View {
             }
             Divider()
             Button {
-                iPSX2Bridge.saveState(slot: 0)
+                iPSX2Bridge.saveState(0)
             } label: {
                 Label("Save State", systemImage: "square.and.arrow.down")
             }
             Button {
-                iPSX2Bridge.loadState(slot: 0)
+                iPSX2Bridge.loadState(0)
             } label: {
                 Label("Load State", systemImage: "square.and.arrow.up")
             }
