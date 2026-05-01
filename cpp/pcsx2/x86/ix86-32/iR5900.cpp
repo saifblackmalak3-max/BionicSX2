@@ -1862,13 +1862,16 @@ void R5900::Dynarec::OpcodeImpl::recSYSCALL()
 	{
 		if (g_cpuConstRegs[3].UC[0] == 0x64 || g_cpuConstRegs[3].UC[0] == 0x68)
 		{
-			// Emulate the amount of cycles it takes for the exception handlers to run
-			// This number was found by using github.com/F0bes/flushcache-cycles
-			Console.WriteLn("[SYSCALL-DIAG] FlushCache called: v0=%d a0=0x%08X a1=0x%08X pc=0x%08X",
-				g_cpuConstRegs[3].UC[0],
-				cpuRegs.GPR.n.a0.UL[0],
-				cpuRegs.GPR.n.a1.UL[0],
-				cpuRegs.pc);
+			iFlushCall(FLUSH_EVERYTHING);
+			armEmitCall(reinterpret_cast<void*>(+[]() {
+				u32 a1 = cpuRegs.GPR.n.a1.UL[0];
+				Console.WriteLn("[FLUSHCACHE] Executing JIT cache clear: a1=0x%08X", a1);
+				if (a1 == 0xFFFFFFFF || a1 == 0) {
+					eeRecNeedsReset = true;
+				} else {
+					recClear(cpuRegs.GPR.n.a0.UL[0], (a1 + 3) / 4);
+				}
+			}));
 			s_nBlockCycles += 5650;
 			return;
 		}
