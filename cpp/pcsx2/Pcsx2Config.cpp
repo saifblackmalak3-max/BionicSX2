@@ -2255,9 +2255,27 @@ void EmuFolders::SetDefaults(SettingsInterface& si)
 	si.SetStringValue("Folders", "DebuggerSettings", "debuggersettings");
 }
 
+static std::string NormalizeFolderPath(const std::string& root, std::string value)
+{
+	if (!Path::IsAbsolute(value))
+	{
+		static constexpr std::string_view documents_prefix = "Documents/";
+		if (root.size() >= documents_prefix.size() &&
+			root.compare(root.size() - documents_prefix.size(), documents_prefix.size(), documents_prefix) == 0)
+		{
+			if (value == "Documents")
+				value.clear();
+			else if (value.rfind(documents_prefix, 0) == 0)
+				value.erase(0, documents_prefix.size());
+		}
+	}
+	return value;
+}
+
 static std::string LoadPathFromSettings(SettingsInterface& si, const std::string& root, const char* name, const char* def)
 {
 	std::string value = si.GetStringValue("Folders", name, def);
+	value = NormalizeFolderPath(root, std::move(value));
 	if (!Path::IsAbsolute(value))
 		value = Path::Combine(root, value);
 	return value;

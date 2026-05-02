@@ -854,6 +854,8 @@ INISettingsInterface* g_p44_settings_interface = nullptr;
     // Re-ensure EmuFolders (idempotent)
     EmuFolders::DataRoot = dataRoot;
     EmuFolders::Savestates = dataRoot + "/sstates";
+    FileSystem::CreateDirectoryPath(EmuFolders::Savestates.c_str(), true);
+    Console.WriteLn("FORCED Savestates path: %s", EmuFolders::Savestates.c_str());
     EmuFolders::Bios = dataRoot + "/bios";
     // ...
     
