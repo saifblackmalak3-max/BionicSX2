@@ -1388,6 +1388,11 @@ INISettingsInterface* g_p44_settings_interface = nullptr;
     // ... [Init other folders if needed, but DataRoot is key] ...
     EmuFolders::Logs = dataRoot + "/logs";
 
+    // Force correct sstates path regardless of INI settings
+    EmuFolders::Savestates = dataRoot + "/sstates";
+    FileSystem::CreateDirectoryPath(EmuFolders::Savestates.c_str(), true);
+    Console.WriteLn("FORCED Savestates path: %s", EmuFolders::Savestates.c_str());
+
     // --- Unified Logging Redirection ---
     // Force stderr and stdout to pcsx2_log.txt
     std::string logPath = dataRoot + "/pcsx2_log.txt";

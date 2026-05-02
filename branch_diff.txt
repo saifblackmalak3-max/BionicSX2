@@ -12,7 +12,11 @@ index 9190710..39cb832 100644
 -		// the host register. _allocX86reg guarantees a valid load.
 -		_deleteGPRtoXMMreg(_Rt_, DELETE_REG_FLUSH_AND_FREE);
 -		const int regt = _allocX86reg(X86TYPE_GPR, _Rt_, MODE_READ);
- 		_eeFlushAllDirty();
+ 	git add .
+git commit -m "i can do it"
+git push origin main
+
+	_eeFlushAllDirty();
 -		if (ee_loop_probe)
 -		{
 -			armAsm->Push(a64::x0, a64::x1, a64::x2, a64::x3);

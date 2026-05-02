@@ -907,6 +907,8 @@ void VMManager::Internal::LoadStartupSettings()
 {
 	SettingsInterface* bsi = Host::Internal::GetBaseSettingsLayer();
 	EmuFolders::LoadConfig(*bsi);
+	// Force Savestates to Documents/sstates regardless of INI
+	EmuFolders::Savestates = EmuFolders::DataRoot + "/sstates";
 	EmuFolders::EnsureFoldersExist();
 
 	// We need to create the console window early, otherwise it appears behind the main window.
@@ -1195,6 +1197,8 @@ void VMManager::Internal::UpdateEmuFolders()
 
 	auto lock = Host::GetSettingsLock();
 	EmuFolders::LoadConfig(*Host::Internal::GetBaseSettingsLayer());
+	// Force Savestates to Documents/sstates regardless of INI
+	EmuFolders::Savestates = EmuFolders::DataRoot + "/sstates";
 	EmuFolders::EnsureFoldersExist();
 
 	if (VMManager::HasValidVM())
