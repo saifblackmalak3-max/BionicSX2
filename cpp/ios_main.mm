@@ -1378,6 +1378,10 @@ INISettingsInterface* g_p44_settings_interface = nullptr;
     
     std::string dataRoot = [documentsDirectory UTF8String];
     EmuFolders::DataRoot = dataRoot;
+    EmuFolders::Savestates = dataRoot + "/sstates";
+    EmuFolders::Bios = dataRoot + "/bios";
+    EmuFolders::Logs = dataRoot + "/logs";
+    EmuFolders::Cheats = dataRoot + "/cheats";
     EmuFolders::AppRoot = [resourcePath UTF8String];
     EmuFolders::Resources = [resourcePath UTF8String];
     EmuFolders::Bios = dataRoot + "/bios";
